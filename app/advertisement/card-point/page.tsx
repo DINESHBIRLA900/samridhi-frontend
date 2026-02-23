@@ -8,7 +8,9 @@ import AddAdvertisementCard from "@/components/advertisements/AddAdvertisementCa
 import { Eye, Pencil, Trash2, Plus, ArrowLeft } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
-export default function CardPointDetailPage() {
+import { Suspense } from "react";
+
+function CardPointDetailContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -149,5 +151,13 @@ export default function CardPointDetailPage() {
                 />
             )}
         </div>
+    );
+}
+
+export default function CardPointDetailPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]">Loading...</div>}>
+            <CardPointDetailContent />
+        </Suspense>
     );
 }
