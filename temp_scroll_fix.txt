@@ -1,0 +1,24 @@
+    // Restore scroll position after route change - EXTENDED for Next.js override
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav) return;
+
+        const savedPosition = scrollPosRef.current;
+        const timers: number[] = [];
+        
+        // Immediately restore
+        nav.scrollTop = savedPosition;
+        
+        // Keep restoring at intervals (Next.js resets between 100-500ms per browser test)
+        const delays = [0, 10, 50, 100, 150, 200, 300, 400, 500, 600, 800, 1000];
+        delays.forEach(delay => {
+            const timer = window.setTimeout(() => {
+                if (nav) nav.scrollTop = savedPosition;
+            }, delay);
+            timers.push(timer);
+        });
+
+        return () => {
+            timers.forEach(timer => clearTimeout(timer));
+        };
+    }, [pathname]);
