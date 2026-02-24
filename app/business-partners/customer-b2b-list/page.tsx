@@ -131,13 +131,14 @@ export default function CustomerB2BListPage() {
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">Location</th>
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">GSTIN</th>
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">Status</th>
+                                <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">Registered By</th>
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredItems.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="py-8 text-center text-gray-500">
+                                    <td colSpan={7} className="py-8 text-center text-gray-500">
                                         No dealers found matching your search.
                                     </td>
                                 </tr>
@@ -195,6 +196,11 @@ export default function CustomerB2BListPage() {
                                                 : 'bg-red-50 text-red-600 border-red-100'
                                                 }`}>
                                                 {item.status}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <span className="text-xs font-semibold text-gray-600">
+                                                {item.registered_by?.name || '-'}
                                             </span>
                                         </td>
                                         <td className="py-4 px-6 text-right">

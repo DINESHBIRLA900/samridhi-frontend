@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/users`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'}/api/users`;
 
 export const getUsers = async (params: any = {}) => {
     const response = await axios.get(API_URL, { params });

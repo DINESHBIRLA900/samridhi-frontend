@@ -130,13 +130,14 @@ export default function CustomerListPage() {
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">Contact Info</th>
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">Address</th>
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">Status</th>
+                                <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider">Registered By</th>
                                 <th className="py-4 px-6 font-medium uppercase text-xs tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {filteredItems.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="py-8 text-center text-gray-500">
+                                    <td colSpan={6} className="py-8 text-center text-gray-500">
                                         No farmers found matching your search.
                                     </td>
                                 </tr>
@@ -175,6 +176,11 @@ export default function CustomerListPage() {
                                                 : 'bg-red-500/10 text-red-400 border-red-500/20'
                                                 }`}>
                                                 {item.status}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <span className="text-xs font-semibold text-gray-600">
+                                                {item.registered_by?.name || '-'}
                                             </span>
                                         </td>
                                         <td className="py-4 px-6 text-right">

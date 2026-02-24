@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { getTeams, deleteTeam } from "@/services/teamService";
-import { Plus, Pencil, Trash2, Search, User as UserIcon, Building2, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, User as UserIcon, Building2, MapPin, ChevronRight } from "lucide-react";
 import { toast, Toaster } from 'sonner';
 import TeamFormModal from "@/components/teams/TeamFormModal";
+import { useRouter } from "next/navigation";
 
 export default function TeamStructurePage() {
+    const router = useRouter();
     const [teams, setTeams] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -71,19 +73,19 @@ export default function TeamStructurePage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2 uppercase">
                         Team Structure
                     </h1>
-                    <p className="text-gray-500 flex items-center gap-2">
-                        Manage your organization's workforce
-                        <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs border border-orange-100 font-medium">
-                            {teams.length} Teams
+                    <p className="text-gray-500 flex items-center gap-2 uppercase text-xs">
+                        MANAGE YOUR ORGANIZATION'S WORKFORCE
+                        <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] border border-orange-100 font-bold">
+                            {teams.length} TEAMS
                         </span>
                     </p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 font-medium"
+                    className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 font-bold uppercase"
                 >
                     <Plus size={20} />
                     Create Team
@@ -95,27 +97,36 @@ export default function TeamStructurePage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                     type="text"
-                    placeholder="Search teams by name, zone, or department..."
+                    placeholder="SEARCH TEAMS BY NAME, ZONE, OR DEPARTMENT..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-12 pr-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-gray-400 shadow-sm"
+                    className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-12 pr-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-gray-400 shadow-sm uppercase text-sm"
                 />
             </div>
 
             {/* Grid View */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredTeams.map(team => (
-                    <div key={team._id} className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5 transition-all relative overflow-hidden">
-
-                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div
+                        key={team._id}
+                        onClick={() => router.push(`/company-structure/team-structure/${team._id}`)}
+                        className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5 transition-all relative overflow-hidden cursor-pointer"
+                    >
+                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             <button
-                                onClick={() => handleOpenModal(team)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenModal(team);
+                                }}
                                 className="p-2 bg-gray-100 hover:bg-orange-50 text-gray-600 hover:text-orange-600 rounded-lg transition-colors"
                             >
                                 <Pencil size={16} />
                             </button>
                             <button
-                                onClick={() => handleDelete(team._id)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(team._id);
+                                }}
                                 className="p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition-colors"
                             >
                                 <Trash2 size={16} />

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/company/designation`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'}/api/company/designation`;
 
 export const getDesignations = async (params: any = {}) => {
     const response = await axios.get(API_URL, { params });

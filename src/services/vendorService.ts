@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/vendors`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'}/api/vendors`;
 
 export const getVendors = async (search?: string) => {
     const url = search ? `${API_URL}?search=${encodeURIComponent(search)}` : API_URL;

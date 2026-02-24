@@ -5,29 +5,29 @@ import PageHeader from '@/components/common/PageHeader';
 import StatsCard from '@/components/StatsCard';
 import SearchInput from '@/components/common/SearchInput';
 import DateFilter, { DateFilterOption, DateRange } from '@/components/common/DateFilter';
-import { FileText, Trash2 } from 'lucide-react';
-import HSNForm from '@/components/products/HSNForm';
+import { Box, Trash2 } from 'lucide-react';
+import PackingForm from '@/components/products/PackingForm';
 import { Toaster, toast } from 'sonner';
-import { getHsnCodes, createHsnCode, deleteHsnCode } from '@/services/productService';
+import { getPackings, createPacking, deletePacking } from '@/services/productService';
 
-export default function HSNCodePage() {
-    const [hsnCodes, setHsnCodes] = useState<any[]>([]);
+export default function PackingPage() {
+    const [packings, setPackings] = useState<any[]>([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [dateFilter, setDateFilter] = useState<{ option: DateFilterOption, range?: DateRange }>({ option: 'all' });
 
     useEffect(() => {
-        fetchHsnCodes();
+        fetchPackings();
     }, []);
 
-    const fetchHsnCodes = async () => {
+    const fetchPackings = async () => {
         try {
             setLoading(true);
-            const data = await getHsnCodes();
-            setHsnCodes(data);
+            const data = await getPackings();
+            setPackings(data);
         } catch (error) {
-            toast.error('Failed to fetch HSN codes');
+            toast.error('Failed to fetch packings');
         } finally {
             setLoading(false);
         }
@@ -37,45 +37,44 @@ export default function HSNCodePage() {
         setDateFilter({ option, range });
     };
 
-    const handleAddHSN = async (data: any) => {
+    const handleAddPacking = async (data: any) => {
         try {
-            await createHsnCode(data);
-            toast.success('HSN Code created successfully');
+            await createPacking(data);
+            toast.success('Packing created successfully');
             setIsFormOpen(false);
-            fetchHsnCodes();
+            fetchPackings();
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to create HSN code');
+            toast.error(error.response?.data?.message || 'Failed to create packing');
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this HSN code?')) return;
+        if (!window.confirm('Are you sure you want to delete this packing size?')) return;
         try {
-            await deleteHsnCode(id);
-            toast.success('HSN Code deleted successfully');
-            fetchHsnCodes();
+            await deletePacking(id);
+            toast.success('Packing deleted successfully');
+            fetchPackings();
         } catch (error) {
-            toast.error('Failed to delete HSN code');
+            toast.error('Failed to delete packing');
         }
     };
 
-    const filteredHsnCodes = hsnCodes.filter(hsn =>
-        hsn.hsn_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        hsn.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredPackings = packings.filter(item =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const activeCount = hsnCodes.filter(h => h.status === 'Active').length;
-    const inactiveCount = hsnCodes.filter(h => h.status === 'Inactive').length;
+    const activeCount = packings.filter(u => u.status === 'Active').length;
+    const inactiveCount = packings.filter(u => u.status === 'Inactive').length;
 
     return (
         <div className="w-full max-w-[1600px] mx-auto p-8 min-h-screen bg-gray-50">
             <Toaster position="top-right" theme="light" />
 
             <PageHeader
-                title="HSN Code"
-                description="Manage HSN codes and GST rates"
-                totalCount={hsnCodes.length}
-                addButtonLabel="Add HSN Code"
+                title="Packing Management"
+                description="Manage product packing sizes"
+                totalCount={packings.length}
+                addButtonLabel="Add Packing"
                 onAdd={() => setIsFormOpen(true)}
                 showBack={true}
             />
@@ -83,41 +82,40 @@ export default function HSNCodePage() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-6">
                 <StatsCard
-                    title="Total HSN Codes"
-                    value={hsnCodes.length.toString()}
-                    icon={<FileText size={24} />}
+                    title="Total Packing"
+                    value={packings.length.toString()}
+                    icon={<Box size={24} />}
                     color="#3b82f6"
                 />
                 <StatsCard
-                    title="Active Codes"
+                    title="Active Packing"
                     value={activeCount.toString()}
-                    icon={<FileText size={24} />}
+                    icon={<Box size={24} />}
                     color="#10b981"
                 />
                 <StatsCard
-                    title="Inactive Codes"
+                    title="Inactive Packing"
                     value={inactiveCount.toString()}
-                    icon={<FileText size={24} />}
+                    icon={<Box size={24} />}
                     color="#ef4444"
                 />
                 <StatsCard
                     title="Recently Added"
-                    value={loading ? "..." : (hsnCodes.length > 0 ? "Latest Available" : "0")}
-                    icon={<FileText size={24} />}
+                    value={loading ? "..." : (packings.length > 0 ? "Latest Available" : "0")}
+                    icon={<Box size={24} />}
                     color="#8b5cf6"
                 />
             </div>
 
-            {/* Content Area */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6">
                 <div className="p-6 border-b border-gray-100 flex flex-col lg:flex-row justify-between items-center gap-4">
-                    <h2 className="text-lg font-bold text-gray-800 shrink-0 whitespace-nowrap">HSN Code List</h2>
+                    <h2 className="text-lg font-bold text-gray-800 shrink-0 whitespace-nowrap">Packing Sizes</h2>
                     <div className="flex flex-row items-center gap-4 w-full justify-end">
                         <div className="w-full max-w-[768px] flex-1 transition-all">
                             <SearchInput
                                 value={searchQuery}
                                 onChange={setSearchQuery}
-                                placeholder="Search HSN codes..."
+                                placeholder="Search packing sizes..."
                             />
                         </div>
                         <DateFilter onFilterChange={handleDateFilterChange} />
@@ -126,35 +124,35 @@ export default function HSNCodePage() {
 
                 <div className="overflow-x-auto">
                     {loading ? (
-                        <div className="p-12 text-center text-gray-500 font-medium">Loading HSN codes...</div>
-                    ) : filteredHsnCodes.length > 0 ? (
+                        <div className="p-12 text-center text-gray-500 font-medium">Loading packings...</div>
+                    ) : filteredPackings.length > 0 ? (
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-gray-50/50 text-sm font-semibold text-gray-600">
-                                    <th className="px-6 py-4">HSN Code</th>
-                                    <th className="px-6 py-4">GST Rate (%)</th>
+                                    <th className="px-6 py-4">Name</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredHsnCodes.map((hsn) => (
-                                    <tr key={hsn._id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{hsn.hsn_code}</td>
-                                        <td className="px-6 py-4 text-gray-600">{hsn.gst_rate}%</td>
+                                {filteredPackings.map((item) => (
+                                    <tr key={item._id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4 font-medium text-gray-900">{item.name}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${hsn.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${item.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                 }`}>
-                                                {hsn.status}
+                                                {item.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => handleDelete(hsn._id)}
-                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
+                                            {!item.slug && (
+                                                <button
+                                                    onClick={() => handleDelete(item._id)}
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -163,22 +161,21 @@ export default function HSNCodePage() {
                     ) : (
                         <div className="p-12 text-center min-h-[400px] flex flex-col items-center justify-center">
                             <div className="p-4 rounded-full bg-orange-50 mb-4 text-orange-600">
-                                <FileText size={48} />
+                                <Box size={48} />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">No HSN Codes Found</h3>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">No Packing Found</h3>
                             <p className="text-gray-500 max-w-md">
-                                Start by registering a new HSN or SAC code using the button above.
+                                Start by defining a new packing size using the button above.
                             </p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Modal Overlay */}
             {isFormOpen && (
-                <HSNForm
+                <PackingForm
                     onClose={() => setIsFormOpen(false)}
-                    onSubmit={handleAddHSN}
+                    onSubmit={handleAddPacking}
                 />
             )}
         </div>

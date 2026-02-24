@@ -8,6 +8,7 @@ import ContactPerson from "./Form/ContactPerson";
 
 interface BusinessPartnerFormModalProps {
     isOpen: boolean;
+
     onClose: () => void;
     itemToEdit?: any;
     onSave: () => void;

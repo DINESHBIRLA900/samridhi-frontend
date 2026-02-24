@@ -1,18 +1,16 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, Save, Scale } from 'lucide-react';
-import { toast } from 'sonner';
+import { X, Save, Box } from 'lucide-react';
 
-interface UnitFormProps {
+interface PackingFormProps {
     onClose: () => void;
     onSubmit: (data: any) => void;
 }
 
-export default function UnitForm({ onClose, onSubmit }: UnitFormProps) {
+export default function PackingForm({ onClose, onSubmit }: PackingFormProps) {
     const [formData, setFormData] = useState({
         name: '',
-        short_name: ''
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,13 +30,12 @@ export default function UnitForm({ onClose, onSubmit }: UnitFormProps) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Add New Unit</h2>
-                        <p className="text-gray-500 text-sm mt-0.5">Define a measurement unit</p>
+                        <h2 className="text-xl font-bold text-gray-900">Add New Packing</h2>
+                        <p className="text-gray-500 text-sm mt-0.5">Define a packing size</p>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all"
-                        title="Close"
                     >
                         <X size={20} />
                     </button>
@@ -46,16 +43,16 @@ export default function UnitForm({ onClose, onSubmit }: UnitFormProps) {
 
                 {/* Form Layout */}
                 <div className="p-6">
-                    <form id="unit-form" onSubmit={handleSubmit} className="space-y-5">
+                    <form id="packing-form" onSubmit={handleSubmit} className="space-y-5">
                         <div className="text-center mb-6">
                             <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <Scale size={24} />
+                                <Box size={24} />
                             </div>
                         </div>
 
                         {/* Fields */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Unit Name <span className="text-red-500">*</span></label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Packing Name / Size <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
                                 name="name"
@@ -63,23 +60,9 @@ export default function UnitForm({ onClose, onSubmit }: UnitFormProps) {
                                 onChange={handleInputChange}
                                 required
                                 className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm"
-                                placeholder="e.g., Kilogram"
+                                placeholder="e.g., 500 ml"
                             />
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Short Name / Abbreviation <span className="text-red-500">*</span></label>
-                            <input
-                                type="text"
-                                name="short_name"
-                                value={formData.short_name}
-                                onChange={handleInputChange}
-                                required
-                                className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm"
-                                placeholder="e.g., kg"
-                            />
-                        </div>
-
                     </form>
                 </div>
 
@@ -94,11 +77,11 @@ export default function UnitForm({ onClose, onSubmit }: UnitFormProps) {
                     </button>
                     <button
                         type="submit"
-                        form="unit-form"
+                        form="packing-form"
                         className="px-6 py-2.5 bg-linear-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 transition-all font-bold flex items-center gap-2 transform hover:-translate-y-0.5"
                     >
                         <Save size={18} />
-                        Save Unit
+                        Save Packing
                     </button>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/customers`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'}/api/customers`;
 
 export const getCustomers = async (type?: string, search?: string) => {
     const params = new URLSearchParams();

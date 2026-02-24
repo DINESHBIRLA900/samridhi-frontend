@@ -202,12 +202,14 @@ export default function CompanyStructurePage({ title, type, fields, viewMode = '
                                             >
                                                 <Pencil size={16} />
                                             </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(item._id); }}
-                                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {!item.slug && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(item._id); }}
+                                                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
 
@@ -282,7 +284,8 @@ export default function CompanyStructurePage({ title, type, fields, viewMode = '
                                                     </div>
                                                     <ActionButtons
                                                         onEdit={() => handleOpenModal(item)}
-                                                        onDelete={() => handleDelete(item._id)}
+                                                        onDelete={item.slug ? undefined : () => handleDelete(item._id)}
+                                                        showDelete={!item.slug}
                                                     />
                                                 </div>
                                             </td>

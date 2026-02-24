@@ -5,29 +5,24 @@ import { useParams, useRouter } from "next/navigation";
 import { toast, Toaster } from 'sonner';
 import { getCompanyStructure } from "@/services/companyStructureService";
 import { getUsers } from "@/services/userService";
-import { getDesignations, deleteDesignation } from "@/services/designationService";
 import PageHeader from "@/components/common/PageHeader";
 import EmployeeTable from "@/components/employees/EmployeeTable";
 import Pagination from "@/components/common/Pagination";
-import DesignationFormModal from "@/components/common/Form/DesignationFormModal";
-import ActionButtons from "@/components/common/ActionButtons";
+import { LayoutGrid } from "lucide-react";
 
 export default function DepartmentDetailsPage() {
     const params = useParams();
     const { id } = params;
+    const router = useRouter();
 
     const [department, setDepartment] = useState<any>(null);
     const [employees, setEmployees] = useState<any[]>([]);
-    const [designations, setDesignations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const limit = 10;
 
-    // Designation Modal State
-    const [isDesignationModalOpen, setIsDesignationModalOpen] = useState(false);
-    const [designationToEdit, setDesignationToEdit] = useState<any>(null);
 
     useEffect(() => {
         if (id) {
@@ -49,9 +44,6 @@ export default function DepartmentDetailsPage() {
             }
             setDepartment(dept);
 
-            // 2. Fetch Designations for this Department
-            const designationsData = await getDesignations({ department: id });
-            setDesignations(designationsData);
 
             // 3. Fetch Employees for this Department using ID with pagination
             const data = await getUsers({
@@ -71,22 +63,6 @@ export default function DepartmentDetailsPage() {
         }
     };
 
-    const handleDeleteDesignation = async (designationId: string) => {
-        if (window.confirm("Are you sure you want to delete this designation?")) {
-            try {
-                await deleteDesignation(designationId);
-                toast.success("Designation deleted successfully");
-                fetchData();
-            } catch (error: any) {
-                toast.error(error.response?.data?.message || "Failed to delete designation");
-            }
-        }
-    };
-
-    const handleEditDesignation = (designation: any) => {
-        setDesignationToEdit(designation);
-        setIsDesignationModalOpen(true);
-    };
 
     if (loading && !department) {
         return (
@@ -108,71 +84,25 @@ export default function DepartmentDetailsPage() {
             <Toaster position="top-right" theme="light" />
 
             <PageHeader
-                title={department.department_name}
-                description={department.description || 'Manage department employees and designations.'}
+                title={department.department_name.toUpperCase()}
+                description={(department.description || 'Manage department employees and designations.').toUpperCase()}
                 totalCount={totalCount}
                 showBack={true}
-                addButtonLabel="Add Designation"
-                onAdd={() => {
-                    setDesignationToEdit(null);
-                    setIsDesignationModalOpen(true);
-                }}
-            />
+            >
+                <button
+                    onClick={() => router.push(`/company-structure/department/${id}/designations`)}
+                    className="flex items-center gap-2 bg-white border-2 border-orange-500 text-orange-600 hover:bg-orange-50 px-6 py-2.5 rounded-xl transition-all font-bold w-full md:w-auto justify-center"
+                >
+                    <LayoutGrid size={20} />
+                    DEPARTMENT DESIGNATIONS
+                </button>
+            </PageHeader>
 
-            {/* Designations Section */}
-            <div className="mb-8 overflow-hidden bg-white border border-gray-200 rounded-2xl shadow-sm">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-gray-900">Department Designations</h3>
-                </div>
-                <div className="p-0">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-gray-100 text-gray-500 bg-white">
-                                    <th className="py-3 px-6 font-semibold uppercase text-[10px] tracking-wider">Seniority (Level)</th>
-                                    <th className="py-3 px-6 font-semibold uppercase text-[10px] tracking-wider">Designation Name</th>
-                                    <th className="py-3 px-6 font-semibold uppercase text-[10px] tracking-wider text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {designations.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="py-8 text-center text-gray-500 text-sm">
-                                            No designations added yet. Click "Add Designation" to begin.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    designations.map((designation) => (
-                                        <tr key={designation._id} className="hover:bg-orange-50/30 transition-colors group">
-                                            <td className="py-4 px-6">
-                                                <span className="w-7 h-7 flex items-center justify-center rounded-lg bg-orange-100 text-orange-700 font-mono text-xs font-bold shadow-xs">
-                                                    {designation.level || 1}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <div className="font-bold text-gray-900 text-sm tracking-wide uppercase">
-                                                    {designation.designation_name}
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6 text-right">
-                                                <ActionButtons
-                                                    onEdit={() => handleEditDesignation(designation)}
-                                                    onDelete={() => handleDeleteDesignation(designation._id)}
-                                                />
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
 
             {/* Employees Section */}
             <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                 <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                    <h3 className="text-lg font-bold text-gray-900">Employees in {department.department_name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 uppercase">Employees in {department.department_name}</h3>
                 </div>
                 <EmployeeTable
                     users={employees}
@@ -187,14 +117,6 @@ export default function DepartmentDetailsPage() {
                 />
             </div>
 
-            <DesignationFormModal
-                isOpen={isDesignationModalOpen}
-                onClose={() => setIsDesignationModalOpen(false)}
-                departmentId={id as string}
-                departmentName={department.department_name}
-                designationToEdit={designationToEdit}
-                onSuccess={fetchData}
-            />
         </div>
     );
 }

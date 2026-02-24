@@ -3,24 +3,32 @@
 import React, { useState } from 'react';
 import { X, Save, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
+import { getCategories } from '@/services/productService';
 
 interface TechnicalFormProps {
     onClose: () => void;
     onSubmit: (data: any) => void;
+    initialData?: any;
 }
 
-export default function TechnicalForm({ onClose, onSubmit }: TechnicalFormProps) {
+export default function TechnicalForm({ onClose, onSubmit, initialData }: TechnicalFormProps) {
+    const [categories, setCategories] = useState<any[]>([]);
     const [formData, setFormData] = useState({
-        category: '',
-        name: ''
+        category: initialData?.category?._id || initialData?.category || '',
+        name: initialData?.name || ''
     });
 
-    // Placeholder categories - replace with API fetch later
-    const categories = [
-        { id: '1', name: 'General Technical' },
-        { id: '2', name: 'Chemical Composition' },
-        { id: '3', name: 'Physical Properties' }
-    ];
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const data = await getCategories();
+                setCategories(data);
+            } catch (error) {
+                toast.error('Failed to load categories');
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -33,8 +41,6 @@ export default function TechnicalForm({ onClose, onSubmit }: TechnicalFormProps)
             toast.error('Please select a category');
             return;
         }
-        console.log('Technical Form Submitted:', formData);
-        toast.success('Technical details saved successfully');
         onSubmit(formData);
     };
 
@@ -45,8 +51,8 @@ export default function TechnicalForm({ onClose, onSubmit }: TechnicalFormProps)
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Add Technical Details</h2>
-                        <p className="text-gray-500 text-sm mt-0.5">Register new technical specifications</p>
+                        <h2 className="text-xl font-bold text-gray-900">{initialData ? 'Edit Technical Details' : 'Add Technical Details'}</h2>
+                        <p className="text-gray-500 text-sm mt-0.5">{initialData ? 'Update technical specifications' : 'Register new technical specifications'}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -79,7 +85,7 @@ export default function TechnicalForm({ onClose, onSubmit }: TechnicalFormProps)
                                 >
                                     <option value="">Select Category</option>
                                     {categories.map(cat => (
-                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                        <option key={cat._id} value={cat._id}>{cat.name}</option>
                                     ))}
                                 </select>
                             </div>

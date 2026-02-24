@@ -7,15 +7,16 @@ import { toast } from 'sonner';
 interface CategoryFormProps {
     onClose: () => void;
     onSubmit: (data: any) => void;
+    initialData?: any;
 }
 
-export default function CategoryForm({ onClose, onSubmit }: CategoryFormProps) {
+export default function CategoryForm({ onClose, onSubmit, initialData }: CategoryFormProps) {
     const [formData, setFormData] = useState({
-        name: '',
+        name: initialData?.name || '',
         image: null as File | null
     });
 
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image || null);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -36,8 +37,6 @@ export default function CategoryForm({ onClose, onSubmit }: CategoryFormProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Category Form Submitted:', formData);
-        toast.success('Category saved successfully');
         onSubmit(formData);
     };
 
@@ -48,8 +47,8 @@ export default function CategoryForm({ onClose, onSubmit }: CategoryFormProps) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900">Add New Category</h2>
-                        <p className="text-gray-500 text-sm mt-0.5">Create a new product category</p>
+                        <h2 className="text-xl font-bold text-gray-900">{initialData ? 'Edit Category' : 'Add New Category'}</h2>
+                        <p className="text-gray-500 text-sm mt-0.5">{initialData ? 'Update product category details' : 'Create a new product category'}</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -86,6 +85,9 @@ export default function CategoryForm({ onClose, onSubmit }: CategoryFormProps) {
                                 )}
                                 <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleImageUpload} />
                             </div>
+                            <p className="text-[11px] text-orange-600 font-medium mt-1 italic">
+                                * Note: Square image (1:1 aspect ratio) use karein, jaise ki 512x512px.
+                            </p>
                         </div>
 
                         {/* Basic Info */}

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/accounts/chart-of-accounts`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'}/api/accounts/chart-of-accounts`;
 
 export const getAccountHeads = async (params?: { type?: string; parentId?: string }) => {
     try {

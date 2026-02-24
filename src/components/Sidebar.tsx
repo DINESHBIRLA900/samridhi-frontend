@@ -71,6 +71,7 @@ const menuItems: MenuItem[] = [
             { title: "Product List", icon: List, href: "/products/list" },
             { title: "Category", icon: LayoutGrid, href: "/products/category" },
             { title: "Technical List", icon: ClipboardList, href: "/products/technical" },
+            { title: "Packing", icon: Box, href: "/products/packing" },
             { title: "Unit Master", icon: Scale, href: "/products/unit" },
             { title: "HSN Code", icon: FileText, href: "/products/hsn" }
         ]
@@ -314,6 +315,16 @@ const menuItems: MenuItem[] = [
             { title: "Poster", icon: FileText, href: "/advertisement/poster" },
             { title: "Video", icon: PlayCircle, href: "/advertisement/video" },
             { title: "Slider Card", icon: Layers, href: "/advertisement/slider-card" }
+        ]
+    },
+    {
+        title: "Work Head",
+        icon: ClipboardCheck,
+        submenu: [
+            { title: "Visit", icon: MapPin, href: "/work-head/visit" },
+            { title: "Demo", icon: PlayCircle, href: "/work-head/demo" },
+            { title: "Recruitment", icon: UserPlus, href: "/work-head/recruitment" },
+            { title: "Meeting", icon: Users, href: "/work-head/meeting" }
         ]
     },
 

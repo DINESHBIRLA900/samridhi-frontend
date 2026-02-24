@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/attendance/work-approval`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'}/api/attendance/work-approval`;
 
 export const getWorkApprovals = async (params: { page?: number; limit?: number; search?: string; status?: string; startDate?: string; endDate?: string } = {}) => {
     try {
