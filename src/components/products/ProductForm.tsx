@@ -5,6 +5,11 @@ import CategoryForm from './CategoryForm';
 import TechnicalForm from './TechnicalForm';
 import HSNForm from './HSNForm';
 import UnitForm from './UnitForm';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+// Dynamically import ReactQuill to avoid SSR issues
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 interface ProductFormProps {
     onClose: () => void;
@@ -12,14 +17,23 @@ interface ProductFormProps {
 }
 
 interface Variant {
-    id: string; // for key
-    unit_packing: string;
-    sku: string;
-    mrp: string;
-    price_without_gst: string;
-    gst_percent: string;
-    gst_amount: number;
-    total_amount: number;
+    id: string;
+    unit_value: string;
+    unit_master: string;
+    packing: string;
+    gst_bill: {
+        mrp: string;
+        price_excl_gst: string;
+        min_price_excl_gst: string;
+        gst_percent: string;
+        gst_amount: number;
+        total_amount: number;
+    };
+    non_gst_bill: {
+        price_excl_gst: string;
+        min_price_excl_gst: string;
+        total_amount: number;
+    };
 }
 
 export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
@@ -32,13 +46,22 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
         variants: [
             {
                 id: '1',
-                unit_packing: '',
-                sku: '',
-                mrp: '',
-                price_without_gst: '',
-                gst_percent: '',
-                gst_amount: 0,
-                total_amount: 0
+                unit_value: '1',
+                unit_master: '',
+                packing: '',
+                gst_bill: {
+                    mrp: '',
+                    price_excl_gst: '',
+                    min_price_excl_gst: '',
+                    gst_percent: '',
+                    gst_amount: 0,
+                    total_amount: 0
+                },
+                non_gst_bill: {
+                    price_excl_gst: '',
+                    min_price_excl_gst: '',
+                    total_amount: 0
+                }
             }
         ] as Variant[],
         social_links: [] as { platform: string; url: string; }[],
@@ -46,17 +69,70 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
         product_images: [] as File[]
     });
 
+
     const [bannerPreviews, setBannerPreviews] = useState<string[]>([]);
     const [productPreviews, setProductPreviews] = useState<string[]>([]);
 
     // Modal State
     const [activeModal, setActiveModal] = useState<'category' | 'technical' | 'hsn' | 'unit' | null>(null);
 
-    // Data State (Mock Data initialized)
-    const [technicalNames, setTechnicalNames] = useState(['Tech Name A', 'Tech Name B', 'Tech Name C']);
-    const [categories, setCategories] = useState(['Seeds', 'Fertilizers', 'Pesticides', 'Tools']);
-    const [hsnCodes, setHsnCodes] = useState(['1001', '3102', '3808', '8201', '1209']);
-    const [skus, setSkus] = useState(['SKU-001', 'SKU-002', 'SKU-003', 'SKU-004', 'SKU-005']);
+    // Data State
+    const [technicalNamesList, setTechnicalNamesList] = useState<any[]>([]);
+    const [categoriesList, setCategoriesList] = useState<any[]>([]);
+    const [hsnCodesList, setHsnCodesList] = useState<any[]>([]);
+    const [unitsList, setUnitsList] = useState<any[]>([]);
+    const [packingsList, setPackingsList] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [cats, techs, hsn, units, packs] = await Promise.all([
+                    import('../../services/productService').then(m => m.getCategories()),
+                    import('../../services/productService').then(m => m.getTechnicals()),
+                    import('../../services/productService').then(m => m.getHsnCodes()),
+                    import('../../services/productService').then(m => m.getUnits()),
+                    import('../../services/productService').then(m => m.getPackings())
+                ]);
+                setCategoriesList(cats);
+                setTechnicalNamesList(techs);
+                setHsnCodesList(hsn);
+                setUnitsList(units);
+                setPackingsList(packs);
+            } catch (error) {
+                console.error("Error fetching master data:", error);
+                toast.error("Failed to load some master data");
+            }
+        };
+        fetchData();
+    }, []);
+
+    // Sync GST % to all variants when HSN changes
+    useEffect(() => {
+        if (formData.hsn_code && hsnCodesList.length > 0) {
+            const selectedHsn = hsnCodesList.find(h => h._id === formData.hsn_code || h.hsn_code === formData.hsn_code);
+            if (selectedHsn) {
+                setFormData(prev => ({
+                    ...prev,
+                    variants: prev.variants.map(v => {
+                        const updated = {
+                            ...v,
+                            gst_bill: {
+                                ...v.gst_bill,
+                                gst_percent: selectedHsn.gst_rate.toString()
+                            }
+                        };
+                        // Trigger recalculation
+                        const price = parseFloat(v.gst_bill.price_excl_gst) || 0;
+                        const gst = selectedHsn.gst_rate || 0;
+                        const gstAmount = price * (gst / 100);
+                        updated.gst_bill.gst_amount = parseFloat(gstAmount.toFixed(2));
+                        updated.gst_bill.total_amount = parseFloat((price + gstAmount).toFixed(2));
+                        return updated;
+                    })
+                }));
+            }
+        }
+    }, [formData.hsn_code, hsnCodesList]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -87,23 +163,35 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
         });
     };
 
-    const handleVariantChange = (id: string, field: keyof Variant, value: string) => {
+    const handleVariantChange = (id: string, path: string, value: string) => {
         setFormData(prev => {
             const newVariants = prev.variants.map(variant => {
                 if (variant.id === id) {
-                    const updatedVariant = { ...variant, [field]: value };
+                    const keys = path.split('.');
+                    const updatedVariant = JSON.parse(JSON.stringify(variant)); // Deep copy helper
 
-                    // Recalculate GST Amount and Total Amount
-                    if (field === 'price_without_gst' || field === 'gst_percent') {
-                        const price = parseFloat(field === 'price_without_gst' ? value : variant.price_without_gst) || 0;
-                        const gst = parseFloat(field === 'gst_percent' ? value : variant.gst_percent) || 0;
+                    let curr = updatedVariant;
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        curr = curr[keys[i]];
+                    }
+                    curr[keys[keys.length - 1]] = value;
 
+                    // Auto Calculations for GST Bill
+                    if (path.startsWith('gst_bill.')) {
+                        const price = parseFloat(updatedVariant.gst_bill.price_excl_gst) || 0;
+                        const gst = parseFloat(updatedVariant.gst_bill.gst_percent) || 0;
                         const gstAmount = price * (gst / 100);
                         const total = price + gstAmount;
 
-                        updatedVariant.gst_amount = parseFloat(gstAmount.toFixed(2));
-                        updatedVariant.total_amount = parseFloat(total.toFixed(2));
+                        updatedVariant.gst_bill.gst_amount = parseFloat(gstAmount.toFixed(2));
+                        updatedVariant.gst_bill.total_amount = parseFloat(total.toFixed(2));
                     }
+
+                    // Auto Calculations for Non-GST Bill
+                    if (path.startsWith('non_gst_bill.price_excl_gst')) {
+                        updatedVariant.non_gst_bill.total_amount = parseFloat(value) || 0;
+                    }
+
                     return updatedVariant;
                 }
                 return variant;
@@ -112,6 +200,7 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
         });
     };
 
+
     const addVariant = () => {
         setFormData(prev => ({
             ...prev,
@@ -119,17 +208,27 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
                 ...prev.variants,
                 {
                     id: Date.now().toString(),
-                    unit_packing: '',
-                    sku: '',
-                    mrp: '',
-                    price_without_gst: '',
-                    gst_percent: '',
-                    gst_amount: 0,
-                    total_amount: 0
+                    unit_value: '1',
+                    unit_master: '',
+                    packing: '',
+                    gst_bill: {
+                        mrp: '',
+                        price_excl_gst: '',
+                        min_price_excl_gst: '',
+                        gst_percent: '',
+                        gst_amount: 0,
+                        total_amount: 0
+                    },
+                    non_gst_bill: {
+                        price_excl_gst: '',
+                        min_price_excl_gst: '',
+                        total_amount: 0
+                    }
                 }
             ]
         }));
     };
+
 
     const removeVariant = (id: string) => {
         if (formData.variants.length === 1) {
@@ -194,20 +293,20 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
     };
 
     const handleSaveCategory = (data: any) => {
-        setCategories(prev => [...prev, data.name]);
-        setFormData(prev => ({ ...prev, category: data.name }));
+        setCategoriesList(prev => [...prev, data]);
+        setFormData(prev => ({ ...prev, category: data._id }));
         setActiveModal(null);
     };
 
     const handleSaveTechnical = (data: any) => {
-        setTechnicalNames(prev => [...prev, data.name]);
-        setFormData(prev => ({ ...prev, technical_name: data.name }));
+        setTechnicalNamesList(prev => [...prev, data]);
+        setFormData(prev => ({ ...prev, technical_name: data._id }));
         setActiveModal(null);
     };
 
     const handleSaveHSN = (data: any) => {
-        setHsnCodes(prev => [...prev, data.hsn_code]);
-        setFormData(prev => ({ ...prev, hsn_code: data.hsn_code }));
+        setHsnCodesList(prev => [...prev, data]);
+        setFormData(prev => ({ ...prev, hsn_code: data._id }));
         setActiveModal(null);
     };
 
@@ -350,6 +449,38 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
 
                             <div>
                                 <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-sm font-medium text-gray-700">Category <span className="text-red-500">*</span></label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveModal('category')}
+                                        className="flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-xs font-medium border border-orange-200"
+                                    >
+                                        <Plus size={14} />
+                                        Add Category
+                                    </button>
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        name="category"
+                                        value={formData.category}
+                                        onChange={(e) => {
+                                            const newCat = e.target.value;
+                                            setFormData(prev => ({ ...prev, category: newCat, technical_name: '' }));
+                                        }}
+                                        required
+                                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm appearance-none"
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categoriesList.map(opt => <option key={opt._id} value={opt._id}>{opt.name}</option>)}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
                                     <label className="text-sm font-medium text-gray-700">Technical Name</label>
                                     <button
                                         type="button"
@@ -368,35 +499,10 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
                                         className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm appearance-none"
                                     >
                                         <option value="">Select Technical Name</option>
-                                        {technicalNames.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="text-sm font-medium text-gray-700">Category <span className="text-red-500">*</span></label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setActiveModal('category')}
-                                        className="flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-xs font-medium border border-orange-200"
-                                    >
-                                        <Plus size={14} />
-                                        Add Category
-                                    </button>
-                                </div>
-                                <div className="relative">
-                                    <select
-                                        name="category"
-                                        value={formData.category}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm appearance-none"
-                                    >
-                                        <option value="">Select Category</option>
-                                        {categories.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                        {technicalNamesList
+                                            .filter(tech => !formData.category || tech.category === formData.category || tech.category?._id === formData.category)
+                                            .map(opt => <option key={opt._id} value={opt._id}>{opt.name}</option>)
+                                        }
                                     </select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -425,7 +531,7 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
                                         className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm appearance-none"
                                     >
                                         <option value="">Select HSN Code</option>
-                                        {hsnCodes.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                        {hsnCodesList.map(opt => <option key={opt._id} value={opt._id}>{opt.hsn_code} - {opt.gst_rate}%</option>)}
                                     </select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -435,14 +541,45 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
 
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleInputChange}
-                                    rows={4}
-                                    className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm resize-none"
-                                    placeholder="Enter detailed product description"
-                                />
+                                <div className="quill-description-wrapper">
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={formData.description}
+                                        onChange={(content) => setFormData(prev => ({ ...prev, description: content }))}
+                                        placeholder="Enter detailed product description"
+                                        modules={{
+                                            toolbar: [
+                                                ['bold', 'italic', 'underline'],
+                                                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                                ['clean']
+                                            ],
+                                        }}
+                                        className="bg-white rounded-xl border border-gray-200 text-gray-900 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all shadow-sm overflow-hidden"
+                                    />
+                                </div>
+                                <style jsx global>{`
+                                    .quill-description-wrapper .ql-toolbar.ql-snow {
+                                        border-top-left-radius: 0.75rem;
+                                        border-top-right-radius: 0.75rem;
+                                        border-color: #e5e7eb;
+                                        background-color: #f9fafb;
+                                    }
+                                    .quill-description-wrapper .ql-container.ql-snow {
+                                        border-bottom-left-radius: 0.75rem;
+                                        border-bottom-right-radius: 0.75rem;
+                                        border-color: #e5e7eb;
+                                        min-height: 150px;
+                                        font-family: inherit;
+                                        font-size: 0.875rem;
+                                    }
+                                    .quill-description-wrapper .ql-editor {
+                                        min-height: 150px;
+                                    }
+                                    .quill-description-wrapper .ql-editor.ql-blank::before {
+                                        color: #9ca3af;
+                                        font-style: normal;
+                                    }
+                                `}</style>
                             </div>
                         </div>
                     </div>
@@ -474,114 +611,162 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {formData.variants.map((variant, index) => (
-                                <div key={variant.id} className="bg-gray-50 p-6 rounded-2xl border border-gray-200 relative group transition-all hover:border-orange-200 hover:shadow-sm">
-                                    <div className="absolute -left-3 top-6 bg-white border border-gray-200 text-gray-500 text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+                                <div key={variant.id} className="bg-white p-8 rounded-3xl border border-gray-100 relative group transition-all hover:shadow-xl hover:border-orange-100">
+                                    <div className="absolute -left-3 top-8 bg-orange-600 text-white text-xs font-bold w-7 h-7 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30">
                                         {index + 1}
                                     </div>
-                                    <div className="flex flex-col gap-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                            {/* Row 1 */}
+
+                                    <div className="flex flex-col gap-8">
+                                        {/* Unit & Packing Configuration */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Unit / Packing <span className="text-red-500">*</span></label>
-                                                <input
-                                                    type="text"
-                                                    value={variant.unit_packing}
-                                                    onChange={(e) => handleVariantChange(variant.id, 'unit_packing', e.target.value)}
-                                                    className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                                                    placeholder="e.g., 1 KG, 500 ML"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Select SKU</label>
-                                                <div className="relative">
-                                                    <select
-                                                        value={variant.sku}
-                                                        onChange={(e) => handleVariantChange(variant.id, 'sku', e.target.value)}
-                                                        className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all appearance-none"
-                                                    >
-                                                        <option value="">Select SKU</option>
-                                                        {skus.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                                    </select>
-                                                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">MRP (Incl. GST) <span className="text-red-500">*</span></label>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-2">Unit Value *</label>
                                                 <input
                                                     type="number"
-                                                    value={variant.mrp}
-                                                    onChange={(e) => handleVariantChange(variant.id, 'mrp', e.target.value)}
-                                                    min="0"
-                                                    className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                                                    placeholder="0.00"
+                                                    value={variant.unit_value}
+                                                    onChange={(e) => handleVariantChange(variant.id, 'unit_value', e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                                                    placeholder="e.g., 1, 5, 500"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Price (Excl. GST) <span className="text-red-500">*</span></label>
-                                                <input
-                                                    type="number"
-                                                    value={variant.price_without_gst}
-                                                    onChange={(e) => handleVariantChange(variant.id, 'price_without_gst', e.target.value)}
-                                                    min="0"
-                                                    className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                                                    placeholder="0.00"
-                                                />
+                                                <label className="block text-sm font-semibold text-gray-700 mb-2">Unit Master *</label>
+                                                <select
+                                                    value={variant.unit_master}
+                                                    onChange={(e) => handleVariantChange(variant.id, 'unit_master', e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                                                >
+                                                    <option value="">Select Unit</option>
+                                                    {unitsList.map(u => <option key={u._id} value={u._id}>{u.name} ({u.short_name})</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Packing *</label>
+                                                <select
+                                                    value={variant.packing}
+                                                    onChange={(e) => handleVariantChange(variant.id, 'packing', e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                                                >
+                                                    <option value="">Select Packing</option>
+                                                    {packingsList.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                                                </select>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                            {/* Row 2 */}
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">GST % <span className="text-red-500">*</span></label>
-                                                <input
-                                                    type="number"
-                                                    value={variant.gst_percent}
-                                                    onChange={(e) => handleVariantChange(variant.id, 'gst_percent', e.target.value)}
-                                                    min="0"
-                                                    max="100"
-                                                    className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                                                    placeholder="0"
-                                                />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            {/* Section 1: GST Bill */}
+                                            <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                                                    <h4 className="font-bold text-gray-900 uppercase tracking-wider text-xs">Section 1 :- GST Bill</h4>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">MRP (Incl. GST) *</label>
+                                                        <input
+                                                            type="number"
+                                                            value={variant.gst_bill.mrp}
+                                                            onChange={(e) => handleVariantChange(variant.id, 'gst_bill.mrp', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Price (Excl. GST) *</label>
+                                                        <input
+                                                            type="number"
+                                                            value={variant.gst_bill.price_excl_gst}
+                                                            onChange={(e) => handleVariantChange(variant.id, 'gst_bill.price_excl_gst', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                                                            placeholder="0.00"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold mb-1 uppercase text-orange-600">Min Price (Set Manual)</label>
+                                                        <input
+                                                            type="number"
+                                                            value={variant.gst_bill.min_price_excl_gst}
+                                                            onChange={(e) => handleVariantChange(variant.id, 'gst_bill.min_price_excl_gst', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg border border-orange-200 text-sm bg-orange-50/30"
+                                                            placeholder="Floor Price"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">GST % (Auto)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={`${variant.gst_bill.gst_percent}%`}
+                                                            readOnly
+                                                            className="w-full px-3 py-2 rounded-lg bg-gray-100 border border-gray-200 text-sm text-gray-500 font-medium"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">GST Amount</label>
+                                                        <div className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium">₹ {variant.gst_bill.gst_amount.toLocaleString()}</div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Total Amount</label>
+                                                        <div className="px-3 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-bold border border-orange-200">₹ {variant.gst_bill.total_amount.toLocaleString()}</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">GST Amount</label>
-                                                <input
-                                                    type="text"
-                                                    value={`₹ ${variant.gst_amount.toFixed(2)}`}
-                                                    readOnly
-                                                    className="w-full px-3 py-2.5 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 font-medium text-sm shadow-sm"
-                                                />
+
+                                            {/* Section 2: Non GST Bill */}
+                                            <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                                                    <h4 className="font-bold text-gray-900 uppercase tracking-wider text-xs">Section 2 :- Non GST Bill</h4>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Price (Excl. GST) *</label>
+                                                            <input
+                                                                type="number"
+                                                                value={variant.non_gst_bill.price_excl_gst}
+                                                                onChange={(e) => handleVariantChange(variant.id, 'non_gst_bill.price_excl_gst', e.target.value)}
+                                                                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                                                                placeholder="0.00"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] font-bold mb-1 uppercase text-blue-600">Min Price (Set Manual)</label>
+                                                            <input
+                                                                type="number"
+                                                                value={variant.non_gst_bill.min_price_excl_gst}
+                                                                onChange={(e) => handleVariantChange(variant.id, 'non_gst_bill.min_price_excl_gst', e.target.value)}
+                                                                className="w-full px-3 py-2 rounded-lg border border-blue-200 text-sm bg-blue-50/30"
+                                                                placeholder="Floor Price"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase">Total Amount</label>
+                                                        <div className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-bold border border-gray-300">₹ {variant.non_gst_bill.total_amount.toLocaleString()}</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Total Amount</label>
-                                                <input
-                                                    type="text"
-                                                    value={`₹ ${variant.total_amount.toFixed(2)}`}
-                                                    readOnly
-                                                    className="w-full px-3 py-2.5 rounded-lg bg-orange-50 border border-orange-100 text-orange-700 font-bold text-sm shadow-sm"
-                                                />
-                                            </div>
-                                            <div className="flex justify-end pb-1">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeVariant(variant.id)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all text-sm font-medium"
-                                                    title="Remove Variant"
-                                                    disabled={formData.variants.length === 1}
-                                                >
-                                                    <Trash2 size={16} />
-                                                    Remove
-                                                </button>
-                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                                            <p className="text-[10px] text-gray-400 italic">* Min Price sections specify the lowest price allowed for sales.</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeVariant(variant.id)}
+                                                className="flex items-center gap-2 px-4 py-2 text-red-500 hover:text-white hover:bg-red-500 rounded-xl transition-all text-xs font-bold border border-red-100 hover:border-red-500 shadow-sm"
+                                                disabled={formData.variants.length === 1}
+                                            >
+                                                <Trash2 size={14} />
+                                                Remove Variant
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
+
                     </div>
 
                     {/* Social Media Links */}
@@ -680,7 +865,11 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
                 <CategoryForm onClose={() => setActiveModal(null)} onSubmit={handleSaveCategory} />
             )}
             {activeModal === 'technical' && (
-                <TechnicalForm onClose={() => setActiveModal(null)} onSubmit={handleSaveTechnical} />
+                <TechnicalForm
+                    onClose={() => setActiveModal(null)}
+                    onSubmit={handleSaveTechnical}
+                    initialData={{ category: formData.category }}
+                />
             )}
             {activeModal === 'hsn' && (
                 <HSNForm onClose={() => setActiveModal(null)} onSubmit={handleSaveHSN} />

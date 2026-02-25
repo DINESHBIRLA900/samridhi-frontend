@@ -10,8 +10,8 @@ const PACKING_URL = `${BASE_URL}/api/products/packing`; // Added for Packing API
 
 // Category Endpoints
 export const getCategories = async () => (await axios.get(CATEGORY_URL)).data;
-export const createCategory = async (formData: FormData) => (await axios.post(CATEGORY_URL, formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
-export const updateCategory = async (id: string, formData: FormData) => (await axios.put(`${CATEGORY_URL}/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+export const createCategory = async (formData: FormData) => (await axios.post(CATEGORY_URL, formData)).data;
+export const updateCategory = async (id: string, formData: FormData) => (await axios.put(`${CATEGORY_URL}/${id}`, formData)).data;
 export const reorderCategories = async (orderData: { _id: string, order: number }[]) => (await axios.post(`${CATEGORY_URL}/reorder`, { orderData })).data;
 export const deleteCategory = async (id: string) => (await axios.delete(`${CATEGORY_URL}/${id}`)).data;
 
@@ -49,5 +49,5 @@ export const deleteTechnical = async (id: string) => (await axios.delete(`${TECH
 
 // Product List Endpoints
 export const getProducts = async () => (await axios.get(PRODUCT_URL)).data;
-export const createProduct = async (formData: FormData) => (await axios.post(PRODUCT_URL, formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+export const createProduct = async (formData: FormData) => (await axios.post(PRODUCT_URL, formData)).data;
 export const deleteProduct = async (id: string) => (await axios.delete(`${PRODUCT_URL}/${id}`)).data;

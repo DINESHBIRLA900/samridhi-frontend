@@ -79,11 +79,7 @@ export const getAdvertisementCardById = async (id: string) => {
 
 export const createAdvertisementCard = async (formData: FormData) => {
     try {
-        const response = await axios.post(`${API_URL}/cards`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
+        const response = await axios.post(`${API_URL}/cards`, formData);
         return response.data;
     } catch (error) {
         console.error('Error creating advertisement card:', error);
@@ -93,11 +89,7 @@ export const createAdvertisementCard = async (formData: FormData) => {
 
 export const updateAdvertisementCard = async (id: string, formData: FormData) => {
     try {
-        const response = await axios.put(`${API_URL}/cards/${id}`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
+        const response = await axios.put(`${API_URL}/cards/${id}`, formData);
         return response.data;
     } catch (error) {
         console.error('Error updating advertisement card:', error);
@@ -121,11 +113,11 @@ export const getPosters = async () => {
     return response.data;
 };
 export const createPoster = async (formData: FormData) => {
-    const response = await axios.post(`${API_URL}/posters`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await axios.post(`${API_URL}/posters`, formData);
     return response.data;
 };
 export const updatePoster = async (id: string, formData: FormData) => {
-    const response = await axios.put(`${API_URL}/posters/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await axios.put(`${API_URL}/posters/${id}`, formData);
     return response.data;
 };
 export const deletePoster = async (id: string) => {
@@ -139,11 +131,11 @@ export const getSliderCards = async () => {
     return response.data;
 };
 export const createSliderCard = async (formData: FormData) => {
-    const response = await axios.post(`${API_URL}/slider-cards`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await axios.post(`${API_URL}/slider-cards`, formData);
     return response.data;
 };
 export const updateSliderCard = async (id: string, formData: FormData) => {
-    const response = await axios.put(`${API_URL}/slider-cards/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await axios.put(`${API_URL}/slider-cards/${id}`, formData);
     return response.data;
 };
 export const deleteSliderCard = async (id: string) => {
@@ -157,11 +149,11 @@ export const getVideos = async () => {
     return response.data;
 };
 export const createVideo = async (formData: FormData) => {
-    const response = await axios.post(`${API_URL}/videos`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await axios.post(`${API_URL}/videos`, formData);
     return response.data;
 };
 export const updateVideo = async (id: string, formData: FormData) => {
-    const response = await axios.put(`${API_URL}/videos/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await axios.put(`${API_URL}/videos/${id}`, formData);
     return response.data;
 };
 export const deleteVideo = async (id: string) => {

@@ -41,8 +41,12 @@ export default function ProductListPage() {
         try {
             const formData = new FormData();
             Object.keys(data).forEach(key => {
-                if (key === 'images' && data[key]) {
-                    data[key].forEach((file: File) => formData.append('images', file));
+                if (key === 'product_images' && data[key]) {
+                    data[key].forEach((file: File) => formData.append('product_images', file));
+                } else if (key === 'banner_images' && data[key]) {
+                    data[key].forEach((file: File) => formData.append('banner_images', file));
+                } else if (Array.isArray(data[key])) {
+                    formData.append(key, JSON.stringify(data[key]));
                 } else if (data[key] !== null && data[key] !== undefined) {
                     formData.append(key, data[key]);
                 }
@@ -69,8 +73,7 @@ export default function ProductListPage() {
     };
 
     const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const activeCount = products.filter(p => p.status === 'Active').length;
@@ -144,7 +147,7 @@ export default function ProductListPage() {
                                             <th className="px-6 py-4">Image</th>
                                             <th className="px-6 py-4">Name</th>
                                             <th className="px-6 py-4">Category</th>
-                                            <th className="px-6 py-4">Price</th>
+                                            <th className="px-6 py-4">Price (MRP)</th>
                                             <th className="px-6 py-4">Status</th>
                                             <th className="px-6 py-4 text-right">Actions</th>
                                         </tr>
@@ -154,8 +157,8 @@ export default function ProductListPage() {
                                             <tr key={product._id} className="hover:bg-gray-50/50 transition-colors">
                                                 <td className="px-6 py-4">
                                                     <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden border border-gray-200">
-                                                        {product.images && product.images.length > 0 ? (
-                                                            <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+                                                        {product.product_images && product.product_images.length > 0 ? (
+                                                            <img src={product.product_images[0].url} alt={product.name} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <div className="w-full h-full flex items-center justify-center text-gray-400">
                                                                 <Package size={20} />
@@ -165,10 +168,14 @@ export default function ProductListPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="font-medium text-gray-900">{product.name}</div>
-                                                    <div className="text-xs text-gray-500">{product.sku || 'No SKU'}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {product.variants?.[0] ? `${product.variants[0].unit_value} ${product.variants[0].unit_master?.short_name || ''}` : 'No Variants'}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-600 font-medium">{product.category?.name || '-'}</td>
-                                                <td className="px-6 py-4 text-gray-900 font-bold">₹{product.mrp || 0}</td>
+                                                <td className="px-6 py-4 text-gray-900 font-bold">
+                                                    ₹{product.variants?.[0]?.gst_bill?.mrp || 0}
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${product.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                                         }`}>
